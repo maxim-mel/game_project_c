@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 int difficulty = 1;
 int field[9][9];
+int win = 0;
 
 void main_menu(){
     system("cls");
@@ -14,8 +16,7 @@ void main_menu(){
            "1. New game\n"
            "2. Load game\n"
            "3. Level of difficulty\n"
-           "4. Statistics\n"
-           "5. Exit\n"
+           "4. Exit\n"
            "\n"
            "--------------------------------\n\n");
     printf("Choose a number: ");
@@ -24,8 +25,9 @@ void main_menu(){
     if (n != 1){
         main_menu();
     }
-    if ((choice < 1) || (choice > 5)){
+    if ((choice < 1) || (choice > 4)){
         main_menu();
+        return;
     }
     switch (choice){
         case 1:
@@ -38,9 +40,6 @@ void main_menu(){
             set_level();
             break;
         case 4:
-            statictics();
-            break;
-        case 5:
             return 0;
     };
     main_menu();
@@ -82,6 +81,12 @@ void draw_field(){
         }
     }
     printf("   ╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝");
+    if (win == 1) {
+        printf("\n\n \x1b[92mYou win!\x1b[37m");
+        getchar();
+        main_menu();
+    }
+    /* fflush(stdin); */
     int n;
     int x, y, num;
     printf("\n\n Enter '0 0' to exit.\n");
@@ -114,7 +119,7 @@ void draw_field(){
     }
     field[x - 1][y - 1] = num;
     int num_exists_row[9] = {0};
-    int win = 1;
+    win = 1;
     for (i = 0; i < 9; i++) {
         int j;
         for (j = 0; j < 9; j++) {
@@ -171,6 +176,16 @@ void draw_field(){
         }
         memset(num_exists_square, 0, sizeof(num_exists_square));
     }
+    FILE *game_save;
+    game_save = fopen("saved_game.txt", "w");
+    for (i = 0; i < 9; i++) {
+        int j;
+        for (j = 0; j < 9; j++) {
+            fprintf(game_save, "%d ", field[j][i]);
+        }
+    }
+    fclose(game_save);
+    draw_field();
     /*
     printf("%d ", win);
     getchar();
@@ -181,13 +196,6 @@ void draw_field(){
     }
     getchar();
     */
-    if (win == 1) {
-        printf(" \x1b[92mYou win!\x1b[37m");
-        getchar();
-        main_menu();
-    } else {
-        draw_field();
-    }
 }
 
 void new_game(){
@@ -203,23 +211,69 @@ void new_game(){
     */
     FILE *level_data;
     char c_num;
-    level_data = fopen("s_level1.txt", "r");
+    char filename[11];
+    switch (difficulty){
+        case 1:
+            strcpy(filename, "easy.txt");
+            break;
+        case 2:
+            strcpy(filename, "medium.txt");
+            break;
+        case 3:
+            strcpy(filename, "hard.txt");
+            break;
+    }
+    level_data = fopen(filename, "r");
+    /* printf("%s\n", filename); */
+
+    int lines_count = 0;
+    c_num = getc(level_data);
+    while (c_num != EOF) {
+        if (c_num == '\n') {
+            lines_count += 1;
+        }
+        c_num = getc(level_data);
+    }
+    /* printf("%d\n", lines_count); */
+
+    srand(time(NULL));
+    int line_num = rand() % (lines_count + 1);
+    /* printf("%d\n", line_num); */
+    fseek(level_data, line_num * 83, SEEK_SET);
     int i;
     for (i = 0; i < 9; i++) {
         int j;
         for (j = 0; j < 9; j++) {
             c_num = fgetc(level_data);
             field[j][i] = -atoi(&c_num);
+            /* printf("%d ", atoi(&c_num)); */
         }
     }
+    fgetc(level_data);
+    printf("\n");
+
     fclose(level_data);
+    /* getchar(); */
     draw_field();
 }
 
 void load_game(){
     printf("\nFeature in development...\n");
-    printf("Press any key...");
-    getchar();
+    /* printf("Press any key..."); */
+
+    FILE *game_save;
+    char c_num;
+    game_save = fopen("saved_game.txt", "r");
+    int i;
+    for (i = 0; i < 9; i++) {
+        int j;
+        for (j = 0; j < 9; j++) {
+            fscanf(game_save, "%d", &field[j][i]);
+        }
+    }
+    fclose(game_save);
+
+    /* getchar(); */
     draw_field();
 }
 
@@ -258,12 +312,6 @@ void set_level(){
         set_level();
     }
     difficulty = level;
-}
-
-void statictics(){
-    printf("\nFeature in development...\n");
-    printf("Press any key...");
-    getchar();
 }
 
 int main(){
